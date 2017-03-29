@@ -22,11 +22,14 @@ end
 
 t = 1
 while err(w) > goalError && t < 500
-  println(string("[T = ", t, "] error = ", err(w), ", w = ", w))
   g = grad(w)
   w = w - (1/t) * learningRate * g
   t += 1
 end
+
+println("\nGradient Decent: ")
+println(string("W = ", w))
+println(string("Error = ", err(w)))
 
 YFitted = zeros(n)
 for i in 1:n
