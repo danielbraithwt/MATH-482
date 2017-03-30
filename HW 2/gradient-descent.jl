@@ -1,3 +1,6 @@
+# Daniel Braithwaite
+# 300313770
+
 learningRate = 0.025
 w = 0
 goalError = 0.001

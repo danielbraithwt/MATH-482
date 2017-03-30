@@ -1,3 +1,6 @@
+# Daniel Braithwaite
+# 300313770
+
 function err(w)
   sum = 0
   for i in 1:length(X)

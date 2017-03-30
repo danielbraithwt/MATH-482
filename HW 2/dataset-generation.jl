@@ -1,3 +1,5 @@
+# Daniel Braithwaite
+# 300313770
 using PyPlot
 
 n = 100
