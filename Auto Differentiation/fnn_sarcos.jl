@@ -2,16 +2,16 @@ push!(LOAD_PATH, pwd())
 using FNN_Module
 using MAT
 
-function normalize(x)
+function myNormalize(x)
     m, n = size(x)
-    y = x .- sum(x,2) / n
-    y = y ./ sqrt(sum(y.^2,2) / n)
+    y = x .- sum(x,1) / m
+    y = y ./ sqrt(sum(y.^2,1) / m)
     return y
 end
 
 function load_matlab_data(filename::String, dictname::String)
     x = matread(filename)[dictname]
-    return normalize(x)
+    return myNormalize(x)
 end
 
 function test_sarcos(model::Model, test_points::Array, test_labels::Array)
@@ -63,7 +63,7 @@ end
 srand(12345)
 
 sarcos_train = load_matlab_data("sarcos_inv.mat", "sarcos_inv")
-sarcos_test = load_matlab_data("sarcos_inv_test.mat", "sarcos_inv_test") 
+sarcos_test = load_matlab_data("sarcos_inv_test.mat", "sarcos_inv_test")
 query_points = sarcos_train[:,1:21]
 query_labels = sarcos_train[:,22:28]
 test_points = sarcos_test[:,1:21]

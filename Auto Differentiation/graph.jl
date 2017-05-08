@@ -2,13 +2,62 @@ import Base.tanh
 
 type Graph
    backprop::Array{Function,1}
-   doBackprop::Bool 
+   doBackprop::Bool
    Graph() = new(Array(Function,0),true)
    Graph(backPropNeeded::Bool) = new(Array(Function,0),backPropNeeded)
 end
 
+# As we execute variaous operatons we add operation to a stack
+# when the functions are executed in order it computes the differential
+
 function backprop(g::Graph)
+    # Run through our list of functions which represent our reverse mode
+    # auto differential waiting to be executed.
     for i = length(g.backprop):-1:1  g.backprop[i]() end
+end
+
+function relu(g::Graph, m::NNMatrix)
+  out = NNMatrix(m.n, m.d)
+
+  for j in 1:m.d, i in 1:m.n
+    out.w[i, j] = max(0, m.w[i,j])
+  end
+
+  if g.doBackprop
+      push!(g.backprop,
+            function ()
+                @inbounds for j in 1:m.d, i in 1:m.n
+                    # m.dw contains the "differential" for the current layer and is set here
+                    # out.dw has the "differential" for the folowing layer. That is how the data is propergated
+                    if out.w[i, j] > 0
+                      m.dw[i,j] += 1
+                    else
+                      m.dw[i,j] += 0
+                    end
+                end
+            end )
+  end
+  return out
+end
+
+function sigmoid(g::Graph, m::NNMatrix)
+  out = NNMatrix(m.n, m.d)
+
+  for j in 1:m.d, i in 1:m.n
+    out.w[i, j] = 1.0/(1.0 + e^(-m.w[i, j]))
+  end
+
+  if g.doBackprop
+      push!(g.backprop,
+            function ()
+                @inbounds for j in 1:m.d, i in 1:m.n
+                    # m.dw contains the "differential" for the current layer and is set here
+                    # out.dw has the "differential" for the folowing layer. That is how the data is propergated
+                    m.dw[i,j] += out.w[i,j] * (1. - out.w[i,j]) * out.dw[i,j]
+                end
+            end )
+  end
+  return out
 end
 
 function tanh(g::Graph, m::NNMatrix)
@@ -18,6 +67,8 @@ function tanh(g::Graph, m::NNMatrix)
         push!(g.backprop,
               function ()
                   @inbounds for j in 1:m.d, i in 1:m.n
+                      # m.dw contains the "differential" for the current layer and is set here
+                      # out.dw has the "differential" for the folowing layer. That is how the data is propergated
                       m.dw[i,j] += (1. - out.w[i,j]^2) * out.dw[i,j]
                   end
               end )
@@ -77,7 +128,7 @@ function sub(g::Graph, m1::NNMatrix, m2::NNMatrix)
         push!(g.backprop,
             function ()
                 m1.dw += out.dw
-                m2.dw -= out.dw                
+                m2.dw -= out.dw
             end )
     end
     return out
@@ -113,4 +164,3 @@ function add(g::Graph, m::NNMatrix, c::Float64)
     end
     return out
 end
-

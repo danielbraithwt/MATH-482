@@ -1,9 +1,13 @@
-abstract Model 
+abstract Model
 
-type NNMatrix 
+type NNMatrix
     n::Int
     d::Int
+
+    # weights
     w::Matrix{Float64}
+
+    # differential with respect to weights
     dw::Matrix{Float64}
     NNMatrix(n::Int) = new(n, 1, zeros(n,1), zeros(n,1))
     NNMatrix(n::Int, d::Int) = new(n, d, zeros(n,d), zeros(n,d))
