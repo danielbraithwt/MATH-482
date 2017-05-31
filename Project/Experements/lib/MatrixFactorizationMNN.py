@@ -6,7 +6,7 @@ def init_network(inputs, layers):
     
     current_in = inputs
     for l in layers:
-        layer = tf.Variable(0.02 * (-0.5 + np.random.rand(l, current_in + 1)), dtype='float64')
+        layer = tf.Variable((-0.5 + (np.random.rand(l, current_in + 1))), dtype='float64')
         current_in = l
 
         network.append(layer)
@@ -22,8 +22,10 @@ def apply_network(network, inputs):
 
     return current_out
 
+def sigmoid(tensor):
+    return 1.0/(1.0 + tf.exp(-tensor))
 
-def factorize_matrix(R, lf, interval=100, iterations=10001):
+def factorize_matrix(R, lf, hs, iterations=40000):
     losses = []
     # Get the entered positions of R
     # so we can generate a sparse tensor
@@ -36,32 +38,47 @@ def factorize_matrix(R, lf, interval=100, iterations=10001):
     O = tf.constant(R, dtype='float64')
     idx = tf.constant(indicies, dtype='int64')
 
-    theta = init_network(O.shape[1], [6,lf])
-    fi = init_network(O.shape[0], [6,lf])
+    theta = init_network(R.shape[1], [hs, lf])
+    fi = init_network(R.shape[0], [hs, lf])
 
+    apply_theta = lambda x: apply_network(theta, tf.transpose(tf.expand_dims(x, 1)))[0]
+    apply_fi = lambda x: apply_network(fi, tf.transpose(tf.expand_dims(x, 1)))[0]
 
-    U_lf = apply_network(theta, O)
-    M_lf = apply_network(fi, tf.transpose(O))
+    U_lf = tf.map_fn(apply_theta, O)
+    M_lf = tf.transpose(tf.map_fn(apply_fi, tf.transpose(O)))
 
-    O_hat = tf.matmul(U_lf, tf.transpose(M_lf))
+    O_hat = tf.matmul(U_lf, M_lf)
 
     error = tf.pow(tf.subtract(O, O_hat), 2.0)
     sparse_error = tf.SparseTensor(idx, tf.sqrt(tf.gather_nd(error, idx)), tf.shape(error, out_type=tf.int64))
     loss = tf.sparse_reduce_sum(sparse_error)
 
-    train_op_theta = tf.train.GradientDescentOptimizer(0.00001).minimize(loss, var_list=theta)
-    train_op_fi = tf.train.GradientDescentOptimizer(0.00001).minimize(loss, var_list=fi)
+    train_op_theta = tf.train.GradientDescentOptimizer(0.000001).minimize(loss, var_list=[theta])
+    train_op_fi = tf.train.GradientDescentOptimizer(0.000001).minimize(loss, var_list=[fi])
 
     model = tf.global_variables_initializer()
 
     with tf.Session() as session:
         session.run(model)
         for i in range(iterations):
-            if i % interval == 0:
-                l = session.run(loss)
-                losses.append(l)
-                
             session.run(train_op_theta)
             session.run(train_op_fi)
-            
-    return losses
+
+        final_loss = session.run(loss)
+        
+    return final_loss
+
+def zero_out(R, num):
+    idx = list(np.ndindex(R.shape))
+    np.random.shuffle(idx)
+
+    for i in range(num):
+        R[idx[i]] = 0
+
+A = np.random.randint(1, 6, size=(10, 8))
+B = np.random.randint(1, 6, size=(9, 8))
+R = np.dot(A, np.transpose(B))
+
+zero_out(R, 50)
+
+print(factorize_matrix(R, 5, 10) )

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-def factorize_matrix(R, lf, interval=100, iterations=10001):
+def factorize_matrix(R, lf, iterations=10000):
     # Get the entered positions of R
     # so we can generate a sparse tensor
     indicies = []
@@ -22,19 +22,14 @@ def factorize_matrix(R, lf, interval=100, iterations=10001):
     sparse_error = tf.SparseTensor(idx, tf.sqrt(tf.gather_nd(error, idx)), tf.shape(error, out_type=tf.int64))
     loss = tf.sparse_reduce_sum(sparse_error)
 
-    train_op = tf.train.GradientDescentOptimizer(0.00001).minimize(loss)
+    train_op = tf.train.GradientDescentOptimizer(0.0001).minimize(loss)
 
     model = tf.global_variables_initializer()
-    losses = []
     
     with tf.Session() as session:
         session.run(model)
 
-        for i in range(iterations):
-            if i % interval == 0:
-                l = session.run(loss)
-                losses.append(l)
-            
+        for i in range(iterations):    
             session.run(train_op)
         
         loss_final = session.run(loss)
@@ -42,5 +37,4 @@ def factorize_matrix(R, lf, interval=100, iterations=10001):
         U_final = session.run(U)
         M_final = session.run(M)
 
-
-    return losses
+    return loss_final, (U_final, M_final)

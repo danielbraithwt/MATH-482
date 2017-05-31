@@ -22,7 +22,10 @@ def apply_network(network, inputs):
 
     return current_out
 
-def factorize_matrix(R, lf, interval=100, iterations=10001):
+def sigmoid(tensor):
+    return 1.0/(1.0 + tf.exp(-tensor))
+
+def factorize_matrix(R, lf, interval=100, iterations=40001):
     losses = []
     
     R_pre = np.empty(R.shape).tolist()
@@ -55,20 +58,30 @@ def factorize_matrix(R, lf, interval=100, iterations=10001):
     sparse_error = tf.SparseTensor(idx, tf.sqrt(tf.gather_nd(error, idx)), tf.shape(error, out_type=tf.int64))
     loss = tf.sparse_reduce_sum(sparse_error)
 
-    train_op = tf.train.GradientDescentOptimizer(0.00001).minimize(loss)
+    train_op = tf.train.GradientDescentOptimizer(0.000001).minimize(loss)
 
     model = tf.global_variables_initializer()
 
     with tf.Session() as session:
         session.run(model)
-
-        losses.append(session.run(loss))
-    
         for i in range(iterations):
-            if i % interval == 0:
-                l = session.run(loss)
-                losses.append(l)
-            
             session.run(train_op)
+        loss_final = session.run(loss)
 
-    return losses
+    return loss_final
+
+
+def zero_out(R, num):
+    idx = list(np.ndindex(R.shape))
+    np.random.shuffle(idx)
+
+    for i in range(num):
+        R[idx[i]] = 0
+
+A = np.random.randint(1, 6, size=(10, 8))
+B = np.random.randint(1, 6, size=(9, 8))
+R = np.dot(A, np.transpose(B))
+
+zero_out(R, 50)
+
+print(factorize_matrix(R, 5, 7) )
