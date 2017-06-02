@@ -1,28 +1,33 @@
 import tensorflow as tf
 import numpy as np
 
-def factorize_matrix(R, lf, iterations=10000):
+def factorize_matrix(R, Tr, Ts, lf, lr=0.0001, lam=1, iterations=10000):
     # Get the entered positions of R
     # so we can generate a sparse tensor
-    indicies = []
+    train_indicies = []
+    test_indicies = []
     for i in range(R.shape[0]):
         for j in range(R.shape[1]):
-            if R[i,j] > 0:
-                indicies.append([i,j])
+            if Tr[i,j] > 0:
+                train_indicies.append([i,j])
+            if Ts[i,j] > 0:
+                test_indicies.append([i,j])
 
     R = tf.constant(R, dtype="float64")
-    idx = tf.constant(indicies, dtype='int64')
+    idx = tf.placeholder('int64', [None, 2])
+    num = tf.placeholder('float64')
 
     U = tf.Variable(np.random.rand(R.shape[0], lf))
     M = tf.Variable(np.transpose(np.random.rand(R.shape[1], lf)))
 
     R_hat = tf.matmul(U, M)
 
-    error = tf.pow(tf.subtract(R, R_hat), 2.0)
-    sparse_error = tf.SparseTensor(idx, tf.sqrt(tf.gather_nd(error, idx)), tf.shape(error, out_type=tf.int64))
-    loss = tf.sparse_reduce_sum(sparse_error)
-
-    train_op = tf.train.GradientDescentOptimizer(0.0001).minimize(loss)
+    error = tf.abs(tf.subtract(R, R_hat))
+    sparse_error = tf.SparseTensor(idx, tf.gather_nd(error, idx), tf.shape(error, out_type=tf.int64))
+    loss = tf.div(tf.sparse_reduce_sum(sparse_error), num)
+    minimize = loss + lam * (tf.norm(U) + tf.norm(M))
+    
+    train_op = tf.train.GradientDescentOptimizer(lr).minimize(minimize)
 
     model = tf.global_variables_initializer()
     
@@ -30,11 +35,11 @@ def factorize_matrix(R, lf, iterations=10000):
         session.run(model)
 
         for i in range(iterations):    
-            session.run(train_op)
+            session.run(train_op, feed_dict={idx: train_indicies, num:len(train_indicies)})
         
-        loss_final = session.run(loss)
-        R_hat_final = session.run(R_hat)
+        train_loss_final = session.run(loss, feed_dict={idx: train_indicies, num:len(train_indicies)})
+        test_loss_final = session.run(loss, feed_dict={idx: test_indicies, num:len(test_indicies)})
         U_final = session.run(U)
         M_final = session.run(M)
 
-    return loss_final, (U_final, M_final)
+    return train_loss_final, test_loss_final, (U_final, M_final)
