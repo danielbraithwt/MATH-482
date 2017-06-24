@@ -25,18 +25,22 @@ def apply_network(network, inputs):
 def sigmoid(tensor):
     return 1.0/(1.0 + tf.exp(-tensor))
 
-def factorize_matrix(R, lf, hs, iterations=40000):
+def factorize_matrix(R, Tr, Ts, lf, hs, lr=0.0001, iterations=10000):
     losses = []
     # Get the entered positions of R
     # so we can generate a sparse tensor
-    indicies = []
+    train_indicies = []
+    test_indicies = []
     for i in range(R.shape[0]):
         for j in range(R.shape[1]):
-            if R[i,j] > 0:
-                indicies.append([i,j])
+            if Tr[i,j] > 0:
+                train_indicies.append([i,j])
+            if Ts[i,j] > 0:
+                test_indicies.append([i,j])
 
     O = tf.constant(R, dtype='float64')
-    idx = tf.constant(indicies, dtype='int64')
+    idx = tf.placeholder('int64', [None, 2])
+    num = tf.placeholder('float64')
 
     theta = init_network(R.shape[1], [hs, lf])
     fi = init_network(R.shape[0], [hs, lf])
@@ -49,36 +53,22 @@ def factorize_matrix(R, lf, hs, iterations=40000):
 
     O_hat = tf.matmul(U_lf, M_lf)
 
-    error = tf.pow(tf.subtract(O, O_hat), 2.0)
-    sparse_error = tf.SparseTensor(idx, tf.sqrt(tf.gather_nd(error, idx)), tf.shape(error, out_type=tf.int64))
-    loss = tf.sparse_reduce_sum(sparse_error)
+    error = tf.abs(tf.subtract(O, O_hat))
+    sparse_error = tf.SparseTensor(idx, tf.gather_nd(error, idx), tf.shape(error, out_type=tf.int64))
+    loss = tf.div(tf.sparse_reduce_sum(sparse_error), num)
 
-    train_op_theta = tf.train.GradientDescentOptimizer(0.000001).minimize(loss, var_list=[theta])
-    train_op_fi = tf.train.GradientDescentOptimizer(0.000001).minimize(loss, var_list=[fi])
+    train_op_theta = tf.train.GradientDescentOptimizer(lr).minimize(loss, var_list=[theta])
+    train_op_fi = tf.train.GradientDescentOptimizer(lr).minimize(loss, var_list=[fi])
 
     model = tf.global_variables_initializer()
 
     with tf.Session() as session:
         session.run(model)
         for i in range(iterations):
-            session.run(train_op_theta)
-            session.run(train_op_fi)
-
-        final_loss = session.run(loss)
+            session.run(train_op_theta, feed_dict={idx: train_indicies, num:len(train_indicies)})
+            session.run(train_op_fi, feed_dict={idx: train_indicies, num:len(train_indicies)})
         
-    return final_loss
-
-def zero_out(R, num):
-    idx = list(np.ndindex(R.shape))
-    np.random.shuffle(idx)
-
-    for i in range(num):
-        R[idx[i]] = 0
-
-A = np.random.randint(1, 6, size=(10, 8))
-B = np.random.randint(1, 6, size=(9, 8))
-R = np.dot(A, np.transpose(B))
-
-zero_out(R, 50)
-
-print(factorize_matrix(R, 5, 10) )
+        train_loss_final = session.run(loss, feed_dict={idx: train_indicies, num:len(train_indicies)})
+        test_loss_final = session.run(loss, feed_dict={idx: test_indicies, num:len(test_indicies)})
+        
+    return train_loss_final, test_loss_final
