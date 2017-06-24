@@ -25,7 +25,7 @@ def apply_network(network, inputs):
 def sigmoid(tensor):
     return 1.0/(1.0 + tf.exp(-tensor))
 
-def factorize_matrix(R, Tr, Ts, lf, lr=0.0001, iterations=10000):
+def factorize_matrix(R, Tr, Ts, lf, hs, lr=0.0001, iterations=10000):
     losses = []
     # Get the entered positions of R
     # so we can generate a sparse tensor
@@ -71,4 +71,4 @@ def factorize_matrix(R, Tr, Ts, lf, lr=0.0001, iterations=10000):
         train_loss_final = session.run(loss, feed_dict={idx: train_indicies, num:len(train_indicies)})
         test_loss_final = session.run(loss, feed_dict={idx: test_indicies, num:len(test_indicies)})
         
-    return final_loss
+    return train_loss_final, test_loss_final
