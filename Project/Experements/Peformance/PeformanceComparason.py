@@ -22,9 +22,13 @@ repeat = 0
 #snn_m = []
 #mnn_m = []
 
+dcomp_grid = [(1, 20000), (2, 20000), (3, 20000), (4, 20000), (5, 20000), (6, 20000), (7, 20000)]
+
+snn_grid = [()]
+
 dcomp_losses = np.array(MatrixDecomposition.factorize_matrix(R, 4))
-snn_losses = np.array(MatrixFactorizationSNN.factorize_matrix(R, 8))
-mnn_losses = np.array(MatrixFactorizationMNN.factorize_matrix(R, 4))
+#snn_losses = np.array(MatrixFactorizationSNN.factorize_matrix(R, 8))
+#mnn_losses = np.array(MatrixFactorizationMNN.factorize_matrix(R, 4))
 
 #for i in range(1, repeat):
 #    print(i)
