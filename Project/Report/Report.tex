@@ -28,6 +28,7 @@ Non-negative matrix factorization is the problem given a non negative matrix $V$
 Consider that finding optimal $WH$ to approximae $V$ when all values are present can be done by minimizing the frobenius distance $J(X) = \sum_{i,a} ((WH)_{i,a} - V_{i,a}$, this is Unweighted Matrix Factorization and any crtical point that isnt a global minima is a saddle point. However the case where values are missing is called Weighted Matrix Factorisation, in this case there might be local minima \cite{srebro2003weighted}.
 
 \subsection{Recommendar Systems}
+Recomender systems are widely used to identify items of usse for various users. \textbf{Collaborative Filtering} considers historial interactions alone, works by collecting user feedback. \textbf{Content-based Filtering} utilize the  attributes of the iterms and users.
 
 \section{Introduction}
 To dicuss the idea of matrix factorisation and methods to solve it first we must understand the motivation for wanting to solve such a problem. In the case of the Netflicks challenge the problem was to build a system to recomend movies to users. We have this very large martix $R$ with the rows corosponding to a user and a column corosponding to a movie. The entry $R_{i,j}$ is the rating that user i gave movie j, in practice we would find that a very small percentage of this matrix would be filled in. To make recomendations we would like to predict the ratings which a user might give a movie which they havent watched.\\
