@@ -21,6 +21,14 @@
 
 \maketitle
 
+\section{Background}
+\subsection{Matrix Factorization}
+Non-negative matrix factorization is the problem given a non negative matrix $V$, find non negative factors $W$ and $H$ such that $V \approx WH$. If all entries of $V$ are present then the problem can be solved with SVD. If entries of $V$ are missing then SVD is undefined, if one where to ignore the missing values and use SVD anyway then the model will be prone to overfitting \cite{koren2009matrix}.\\
+
+Consider that finding optimal $WH$ to approximae $V$ when all values are present can be done by minimizing the frobenius distance $J(X) = \sum_{i,a} ((WH)_{i,a} - V_{i,a}$, this is Unweighted Matrix Factorization and any crtical point that isnt a global minima is a saddle point. However the case where values are missing is called Weighted Matrix Factorisation, in this case there might be local minima \cite{srebro2003weighted}.
+
+\subsection{Recommendar Systems}
+
 \section{Introduction}
 To dicuss the idea of matrix factorisation and methods to solve it first we must understand the motivation for wanting to solve such a problem. In the case of the Netflicks challenge the problem was to build a system to recomend movies to users. We have this very large martix $R$ with the rows corosponding to a user and a column corosponding to a movie. The entry $R_{i,j}$ is the rating that user i gave movie j, in practice we would find that a very small percentage of this matrix would be filled in. To make recomendations we would like to predict the ratings which a user might give a movie which they havent watched.\\
 
@@ -63,9 +71,9 @@ However in a real world situation we know that the problems which utilize matrix
 latent factors & training (SSE) &  training 95\% CI & test (SSE) &  test 95\% CI  \\
 \hline
 \hline
-5 & 0 & 0 & 0 & 0\\
-10 & 0 & 0 & 0 & 0\\
-15 & 0 & 0 & 0 & 0\\
+5 & 1.11765105354 & (1.027, 1.208) & 211.201 & (182.722, 239.680)\\
+10 & 2.368e-07 & (5.744e-09, 4.679e-07) & 68.927 & (63.564, 74.288)\\
+15 & 2.083e-19 & (-8.646e-20, 5.031e-19) & 62.868 & (59.319, 66.417)\\
 \hline
 \end{tabular}
 \caption{Table for latent features vs peformance, over partial data set}
@@ -106,9 +114,9 @@ While this does provide a reduction in overfitting it is sill a significant prob
 latent factors & training (SSE) &  training 95\% CI & test (SSE) &  test 95\% CI  \\
 \hline
 \hline
-5 & 0 & 0 & 0 & 0\\
-10 & 0 & 0 & 0 & 0\\
-15 & 0 & 0 & 0 & 0\\
+5 & 15.674 & (15.633, 15.716) & 35.282 & (35.242, 35.323)\\
+10 & 15.539 & (15.519, 15.559) & 35.288 & (35.253, 35.322)\\
+15 & 15.491 & (15.479, 15.503) & 35.298 & (35.281, 35.316)\\
 \hline
 \end{tabular}
 \caption{Table for latent features vs peformance, over partial data set with regulirzation and biases}
@@ -127,6 +135,25 @@ In the same set up as before there is a matrix R with rows representing users an
 & & \sum_{(i,j) \in G} (R_{i,j} - f_{\theta}(user_i)^T \cdot f_{\phi}(movie_j))^2  \\
 \end{aligned}
 \end{equation*}
+
+Over the same data as before  we get the folowing peformance
+
+\begin{table}[H]
+\centering
+\begin{tabular}{| c | c | c | c | c |}
+\hline
+latent factors & training (SSE) &  training 95\% CI & test (SSE) &  test 95\% CI  \\
+\hline
+\hline
+5 & 24.767 & (24.767, 24.767)  & 27.334 & (27.334, 27.334)\\
+10 & 17.004 & (16.822, 17.185) & 16.566 & (16.397, 16.734)\\
+15 & 5.080 & (5.0312, 5.128) & 4.978 & (4.905, 5.051)\\
+\hline
+\end{tabular}
+\caption{Table for latent features vs peformance, over partial data set with regulirzation and biases}
+\end{table}
+
+This method has practically no overfitting aswell as consistantly better test peformance .
 
 \subsubsection{Single Neural Network}
 This approach is very similar to the one just presented, how ever insted now we only have one neural network $f_{\psi}$, which takes some row of R representing a user and some column of R representing a movie and outputs a rating. Making our approximation of ratings $\hat{R}_{i,j} = f_{\psi}(user_i, movie_j)$, and finally giving us the folowing optimization problem.
